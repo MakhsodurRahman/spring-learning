@@ -1,39 +1,38 @@
 package com.example.cache.service;
 
+import com.example.cache.entity.Book;
+import com.example.cache.repository.BookRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.interceptor.CacheAspectSupport;
-import org.springframework.cache.interceptor.CacheInterceptor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Service
 public class BookService {
 
     private static final Logger log = LoggerFactory.getLogger(BookService.class);
+    private final BookRepository bookRepository;
 
-   List<String> books = new ArrayList<>();
-    public BookService(CacheManager cacheManager) {
-
+    public BookService(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
     }
 
-    @Cacheable(value = "books",keyGenerator = "myKeyGen")
-    public Optional<String> getBookByIsbn(String isbn,boolean flag) {
-        return books.stream()
-                .filter(name -> name.contains(isbn))
-                .findFirst();
+    @Cacheable(value = "books", keyGenerator = "myKeyGen")
+    public Optional<Book> getBookByIsbn(String isbn, boolean flag) {
+        log.info("Fetching book by ISBN {} from DB (Default Cache)", isbn);
+        simulateSlowService();
+        return bookRepository.findByIsbn(isbn);
     }
 
+    @Transactional
     @CacheEvict(value = "books", keyGenerator = "myKeyGen")
     public void evictBook(String isbn) {
-        books.add(isbn);
-        log.warn("Cache 'books' not available to evict key={}", isbn);
+        log.info("Evicting and deleting book by ISBN {} from DB", isbn);
+        bookRepository.deleteByIsbn(isbn);
     }
 
     private void simulateSlowService() {
@@ -61,18 +60,24 @@ public class BookService {
     }
 
     // Example demonstrating the use of Redis Cache
-    @Cacheable(value = "redisBooks", cacheManager = "redisCacheManager")
-    public String getBookFromRedis(String isbn) {
-        log.info("Fetching book from source for ISBN: {}", isbn);
+    @Cacheable(value = "redisBooks", cacheManager = "redisCacheManager",key = "#isbn")
+    public Book getBookFromRedis(String isbn) {
+        log.info("Fetching book from DB (Redis Cacheable) for ISBN: {}", isbn);
         simulateSlowService();
-        return "Redis Book Detail for ISBN: " + isbn;
+        return bookRepository.findByIsbn(isbn).orElse(null);
     }
 
     // Example demonstrating the use of Caffeine Cache
     @Cacheable(value = "caffeineBooks", cacheManager = "caffeineCacheManager")
-    public String getBookFromCaffeine(String isbn) {
-        log.info("Fetching book from source (Caffeine) for ISBN: {}", isbn);
+    public Book getBookFromCaffeine(String isbn) {
+        log.info("Fetching book from DB (Caffeine Cacheable) for ISBN: {}", isbn);
         simulateSlowService();
-        return "Caffeine Book Detail for ISBN: " + isbn;
+        return bookRepository.findByIsbn(isbn).orElse(null);
+    }
+
+    @Transactional
+    public Book saveBook(Book book) {
+        log.info("Saving book with ISBN {} to DB", book.getIsbn());
+        return bookRepository.save(book);
     }
 }
