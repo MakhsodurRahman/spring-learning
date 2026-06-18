@@ -28,8 +28,11 @@ public class SimpleCache<K, V> {
         long expiresAt = Instant.now().getEpochSecond() + config.getTtlSeconds();
         map.put(key, new Entry<>(value, expiresAt));
         if (map.size() > config.getMaxSize()) {
-            // naive eviction: clear oldest entry (not efficient)
-            map.keySet().stream().findFirst().ifPresent(map::remove);
+            // Evict oldest entry based on expiration time (expiresAt)
+            map.entrySet().stream()
+                    .min((e1, e2) -> Long.compare(e1.getValue().expiresAt(), e2.getValue().expiresAt()))
+                    .map(Map.Entry::getKey)
+                    .ifPresent(map::remove);
         }
     }
 

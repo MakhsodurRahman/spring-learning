@@ -18,6 +18,9 @@ public class SimpleBinder {
                 f.setAccessible(true);
                 String key = prefix + "." + f.getName();
                 String val = store.get(key).orElse(null);
+                if (val == null && f.getName().equals("ttlSeconds")) {
+                    val = store.get(prefix + ".ttl").orElse(null);
+                }
                 if (val != null) {
                     Object converted = convert(val, f.getType());
                     f.set(instance, converted);

@@ -16,12 +16,8 @@ public class Bootstrapper {
         SimpleBinder binder = new SimpleBinder(store);
         for (String name : names.split(",")) {
             name = name.trim();
-            CacheConfig cfg = new CacheConfig();
+            CacheConfig cfg = binder.bind("cache." + name, CacheConfig.class);
             cfg.setName(name);
-            String ttl = store.getOrDefault("cache." + name + ".ttl", "30");
-            String max = store.getOrDefault("cache." + name + ".maxSize", "1000");
-            cfg.setTtlSeconds(Long.parseLong(ttl));
-            cfg.setMaxSize(Integer.parseInt(max));
             manager.createCache(cfg);
         }
     }

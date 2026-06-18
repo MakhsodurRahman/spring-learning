@@ -80,4 +80,11 @@ public class BookService {
         log.info("Saving book with ISBN {} to DB", book.getIsbn());
         return bookRepository.save(book);
     }
+
+    @Cacheable(cacheResolver = "sdlcProCacheResolver")
+    public Book getBookWithDynamicCache(String isbn) {
+        log.info("Fetching book from DB (Dynamic Cache Resolver) for ISBN: {}", isbn);
+        simulateSlowService();
+        return bookRepository.findByIsbn(isbn).orElse(null);
+    }
 }

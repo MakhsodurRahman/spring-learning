@@ -56,4 +56,13 @@ public class BookController {
         }
         return ResponseEntity.notFound().build();
     }
+
+    @GetMapping("/dynamic/{isbn}")
+    public ResponseEntity<Book> getFromDynamic(@PathVariable String isbn) {
+        Book book = bookService.getBookWithDynamicCache(isbn);
+        if (book != null) {
+            return ResponseEntity.ok(book);
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

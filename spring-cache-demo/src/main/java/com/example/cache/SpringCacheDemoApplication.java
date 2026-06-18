@@ -2,9 +2,11 @@ package com.example.cache;
 
 import com.example.cache.entity.Book;
 import com.example.cache.service.BookService;
+import com.example.cache.service.ProductService;
 import com.example.customcache.Bootstrapper;
 import com.example.customcache.CacheManager;
 import com.example.customcache.ConfigStore;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -17,9 +19,11 @@ import java.nio.file.Path;
 
 @SpringBootApplication
 @EnableCaching
+@RequiredArgsConstructor
 public class SpringCacheDemoApplication {
 
     private static final Logger log = LoggerFactory.getLogger(SpringCacheDemoApplication.class);
+    private final ProductService productService;
 
     public static void main(String[] args) {
         SpringApplication.run(SpringCacheDemoApplication.class, args);
@@ -63,6 +67,31 @@ public class SpringCacheDemoApplication {
             service.evictBook("book1");
             log.info("Fetching book1 after eviction (Should be Not Found because evict also deletes from DB): {}", 
                      service.getBookByIsbn("book1", true).orElse(null));
+
+            // Test dynamic cache resolver routing
+            log.info("=========================================");
+            log.info("--- 5. Testing Dynamic Cache Resolver Routing ---");
+            log.info("[Dynamic Resolver] Fetching 'CAFF-100' (should route to Caffeine, simulating delay): {}", 
+                     service.getBookWithDynamicCache("CAFF-100"));
+            log.info("[Dynamic Resolver] Fetching 'CAFF-100' (should route to Caffeine, instant from cache): {}", 
+                     service.getBookWithDynamicCache("CAFF-100"));
+            
+            try {
+                log.info("[Dynamic Resolver] Fetching 'REDIS-200' (should route to Redis, simulating delay): {}", 
+                         service.getBookWithDynamicCache("REDIS-200"));
+                log.info("[Dynamic Resolver] Fetching 'REDIS-200' (should route to Redis, instant from cache): {}", 
+                         service.getBookWithDynamicCache("REDIS-200"));
+            } catch (Exception e) {
+                log.warn("[Dynamic Resolver] Redis Cache Resolution Test Failed: {}", e.getMessage());
+            }
+            log.info("=========================================");
+
+            productService.get(1L);
+            log.info("get the product");
+            Thread.sleep(30000);
+            productService.get(1L);
+            log.info("get the product ::: {}", productService.get(1L).getProductName());
+            System.out.println("test");
         };
     }
 }
