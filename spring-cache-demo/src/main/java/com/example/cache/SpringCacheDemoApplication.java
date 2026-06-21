@@ -86,11 +86,12 @@ public class SpringCacheDemoApplication {
             }
             log.info("=========================================");
 
-            productService.get(1L);
-            log.info("get the product");
             Thread.sleep(30000);
             productService.get(1L);
-            log.info("get the product ::: {}", productService.get(1L).getProductName());
+            log.info("get the product");
+//            Thread.sleep(30000);
+            productService.get(1L);
+            log.info("get the product ::: {}", productService.get(1L));
             System.out.println("test");
         };
     }

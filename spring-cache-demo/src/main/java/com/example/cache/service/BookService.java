@@ -60,7 +60,7 @@ public class BookService {
     }
 
     // Example demonstrating the use of Redis Cache
-    @Cacheable(value = "redisBooks", cacheManager = "redisCacheManager",key = "#isbn")
+//    @Cacheable(value = "redisBooks", cacheManager = "redisCacheManager",key = "#isbn")
     public Book getBookFromRedis(String isbn) {
         log.info("Fetching book from DB (Redis Cacheable) for ISBN: {}", isbn);
         simulateSlowService();

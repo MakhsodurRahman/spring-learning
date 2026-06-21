@@ -80,19 +80,19 @@ public class CacheConfig {
         return caffeineCacheMsg;
     }
 
-    @Bean("redisCacheManager")
-    public RedisCacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
-        RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(2))
-                .disableCachingNullValues();
-
-        return RedisCacheManager.builder(redisConnectionFactory)
-                .cacheDefaults(cacheConfiguration)
-                .build();
-    }
+//    @Bean("redisCacheManager")
+//    public RedisCacheManager redisCacheManager(RedisConnectionFactory redisConnectionFactory) {
+//        RedisCacheConfiguration cacheConfiguration = RedisCacheConfiguration.defaultCacheConfig()
+//                .entryTtl(Duration.ofMinutes(2))
+//                .disableCachingNullValues();
+//
+//        return RedisCacheManager.builder(redisConnectionFactory)
+//                .cacheDefaults(cacheConfiguration)
+//                .build();
+//    }
 
     @Bean("sdlcProCacheResolver")
-    public CacheResolver sdlcProCacheResolver(CaffeineCacheManager caffeineCacheManager, RedisCacheManager redisCacheManager) {
+    public CacheResolver sdlcProCacheResolver(CaffeineCacheManager caffeineCacheManager) {
         return new CacheResolver() {
             @Override
             public Collection<? extends Cache> resolveCaches(CacheOperationInvocationContext<?> context) {
@@ -100,7 +100,8 @@ public class CacheConfig {
                 Object[] args = context.getArgs();
                 if (args.length > 0 && args[0] != null) {
                     String identifier = args[0].toString();
-                    return isHotProduct(identifier) ? buildCache(caffeineCacheManager, context) : buildCache(redisCacheManager, context);
+//                    return isHotProduct(identifier) ? buildCache(caffeineCacheManager, context) : buildCache(redisCacheManager, context);
+                    return isHotProduct(identifier) ? buildCache(caffeineCacheManager, context) : buildCache(caffeineCacheManager, context);
                 }
                 // Fallback to caffeineCacheManager
                 return buildCache(caffeineCacheManager, context);
