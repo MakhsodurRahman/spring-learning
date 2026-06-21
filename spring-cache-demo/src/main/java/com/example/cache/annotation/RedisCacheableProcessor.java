@@ -8,6 +8,11 @@ import org.aspectj.lang.Signature;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.expression.ExpressionParser;
@@ -19,11 +24,12 @@ import org.springframework.stereotype.Component;
 @Aspect
 @Component
 @AllArgsConstructor
-public class RedisCacheableProcessor {
+public class RedisCacheableProcessor implements ApplicationContextAware {
 
     private static final String KEY_SEPARATOR = ":";
 
     private final RedisTemplate<Object, Object> redisTemplate;
+    private ApplicationContext applicationContext;
 
     @Around(value = "@annotation(com.example.cache.annotation.RedisCacheable)")
     public Object cacheableProcessor(ProceedingJoinPoint pjp) throws Throwable {
@@ -42,16 +48,16 @@ public class RedisCacheableProcessor {
 
         var valOps = redisTemplate.opsForValue();
         Object cachedValue = valOps.get(finalKey);
-        if(cachedValue != null) {
+        if (cachedValue != null) {
             return cachedValue;
         }
 
 
         Object targetValue = pjp.proceed();
         long ttl = redisCacheable.ttl();
-        if(ttl > 0) {
-            valOps.set(finalKey, targetValue,ttl, redisCacheable.ttlUnit());
-        }else  {
+        if (ttl > 0) {
+            valOps.set(finalKey, targetValue, ttl, redisCacheable.ttlUnit());
+        } else {
             valOps.set(finalKey, targetValue);
         }
         return targetValue;
@@ -61,6 +67,7 @@ public class RedisCacheableProcessor {
 
         ExpressionParser parser = new SpelExpressionParser();
         StandardEvaluationContext context = new StandardEvaluationContext();
+        context.setBeanResolver(new BeanFactoryResolver(applicationContext));
         for (int i = 0; i < paramNames.length; i++) {
             context.setVariable(paramNames[i], args[i]);
         }
@@ -68,4 +75,9 @@ public class RedisCacheableProcessor {
     }
 
 
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
+    }
 }
+
