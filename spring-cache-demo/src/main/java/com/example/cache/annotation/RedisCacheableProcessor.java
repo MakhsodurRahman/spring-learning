@@ -22,14 +22,18 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Aspect
-@Component
-@AllArgsConstructor
-public class RedisCacheableProcessor implements ApplicationContextAware {
+//@Component
+public class RedisCacheableProcessor {
 
     private static final String KEY_SEPARATOR = ":";
 
     private final RedisTemplate<Object, Object> redisTemplate;
-    private ApplicationContext applicationContext;
+    private final ApplicationContext applicationContext;
+
+    public RedisCacheableProcessor(RedisTemplate<Object, Object> redisTemplate, ApplicationContext applicationContext) {
+        this.redisTemplate = redisTemplate;
+        this.applicationContext = applicationContext;
+    }
 
     @Around(value = "@annotation(com.example.cache.annotation.RedisCacheable)")
     public Object cacheableProcessor(ProceedingJoinPoint pjp) throws Throwable {
@@ -67,17 +71,15 @@ public class RedisCacheableProcessor implements ApplicationContextAware {
 
         ExpressionParser parser = new SpelExpressionParser();
         StandardEvaluationContext context = new StandardEvaluationContext();
+        
+        // Setting BeanResolver to allow SpEL expressions to invoke other Spring Beans.
+        // This enables powerful dynamic keys, e.g., @RedisCacheable(key = "@myService.generateKey(#id)")
         context.setBeanResolver(new BeanFactoryResolver(applicationContext));
+        
         for (int i = 0; i < paramNames.length; i++) {
             context.setVariable(paramNames[i], args[i]);
         }
         return parser.parseExpression(expression).getValue(context);
-    }
-
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        this.applicationContext = applicationContext;
     }
 }
 

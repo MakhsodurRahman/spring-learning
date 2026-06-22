@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class SpringCacheDemoApplication {
 
+
     private static final Logger log = LoggerFactory.getLogger(SpringCacheDemoApplication.class);
     private final ProductService productService;
 
@@ -30,7 +32,7 @@ public class SpringCacheDemoApplication {
     }
 
     @Bean
-    public CommandLineRunner runDemo(BookService service) {
+    public CommandLineRunner runDemo(BookService service, com.example.cache.repository.ProductRepository productRepository) {
         return args -> {
             log.info("--- 1. Database Initialization ---");
             service.saveBook(new Book("CAFF-100", "Effective Java", "Joshua Bloch"));
@@ -86,7 +88,15 @@ public class SpringCacheDemoApplication {
             }
             log.info("=========================================");
 
-            Thread.sleep(30000);
+            log.info("--- 6. Testing Product Cache ---");
+            com.example.cache.entity.Product testProduct = new com.example.cache.entity.Product();
+            testProduct.setProductName("Demo Product");
+            testProduct.setStock(50L);
+            testProduct.setQuality("Premium");
+            productRepository.save(testProduct);
+            log.info("Product saved with ID: {}", testProduct.getId());
+
+            Thread.sleep(5000);
             productService.get(1L);
             log.info("get the product");
 //            Thread.sleep(30000);
